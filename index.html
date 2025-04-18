@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mapa 3D Interactivo</title>
   <style>
     body { margin: 0; overflow: hidden; }
-    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    canvas { display: block; }
     #imageForm {
       position: absolute;
       top: 20px;
       left: 20px;
       z-index: 10;
-      background-color: rgba(255, 255, 255, 0.7);
+      background-color: rgba(255, 255, 255, 0.8);
       padding: 10px;
       border-radius: 5px;
     }
@@ -20,9 +20,8 @@
 </head>
 <body>
 
-<!-- Formulario para subir imágenes -->
 <div id="imageForm">
-  <form id="imageForm">
+  <form id="imageUploadForm">
     <input type="file" id="imageInput" accept="image/*" />
     <button type="submit">Subir Imagen</button>
   </form>
@@ -30,41 +29,48 @@
 
 <canvas id="globeCanvas"></canvas>
 
-<!-- Three.js -->
+<!-- Three.js y OrbitControls -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
 
 <script>
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globeCanvas') });
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globeCanvas'), antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  // Grupo para globo + imágenes
   const globeGroup = new THREE.Group();
   scene.add(globeGroup);
 
   // Cargar textura del planeta
   const loader = new THREE.TextureLoader();
-  const texture = loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
-
+  const earthTexture = loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
   const globe = new THREE.Mesh(
     new THREE.SphereGeometry(500, 64, 64),
-    new THREE.MeshBasicMaterial({ map: texture })
+    new THREE.MeshBasicMaterial({ map: earthTexture })
   );
   globeGroup.add(globe);
 
-  camera.position.z = 1200;
+  // Orbit Controls
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  camera.position.set(0, 0, 1200);
+  controls.enableZoom = true;
+  controls.zoomSpeed = 1.2;
+  controls.minDistance = 600;
+  controls.maxDistance = 2000;
+
+  // Raycaster para detectar clics
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
 
   let isImageReady = false;
   let imageUrl = "";
 
-  const imageInput = document.getElementById('imageInput');
-  const imageForm = document.getElementById('imageForm');
-
-  imageForm.addEventListener('submit', (e) => {
+  document.getElementById('imageUploadForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const file = imageInput.files[0];
+    const file = document.getElementById('imageInput').files[0];
     if (!file) return alert("Selecciona una imagen");
+
     const reader = new FileReader();
     reader.onload = (event) => {
       imageUrl = event.target.result;
@@ -73,11 +79,8 @@
     reader.readAsDataURL(file);
   });
 
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  document.querySelector('canvas').addEventListener('click', (event) => {
-    if (!isImageReady) return alert("Sube una imagen primero");
+  renderer.domElement.addEventListener('click', (event) => {
+    if (!isImageReady) return;
 
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -95,20 +98,18 @@
         new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide })
       );
 
-      // Colocar la imagen justo sobre la superficie
       marker.position.copy(point.clone().normalize().multiplyScalar(510));
-
-      // Que mire hacia afuera desde el centro
       marker.lookAt(point.clone().normalize().multiplyScalar(1000));
-
       globeGroup.add(marker);
+
       isImageReady = false;
     }
   });
 
+  // Animación
   function animate() {
     requestAnimationFrame(animate);
-    globeGroup.rotation.y += 0.005;
+    controls.update();
     renderer.render(scene, camera);
   }
   animate();
