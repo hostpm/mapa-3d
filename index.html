@@ -1,118 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Globo 3D con Imágenes</title>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-      }
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Globo 3D - IA por País</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    #uploadBox {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 10;
+    }
+    #fileInput {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
 
-      #container {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        z-index: 10;
-      }
+  <div id="uploadBox">
+    <h3>Sube tu Imagen</h3>
+    <input type="file" id="fileInput" />
+  </div>
 
-      #uploadBox {
-        width: 200px;
-        padding: 10px;
-        background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 8px;
-        text-align: center;
-      }
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.150.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.150.1/examples/jsm/controls/OrbitControls.js';
+    import ThreeGlobe from 'https://unpkg.com/three-globe@2.23.0/build/three-globe.module.js';
 
-      #uploadButton {
-        padding: 10px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      }
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-      #uploadButton:hover {
-        background-color: #45a049;
-      }
+    const globe = new ThreeGlobe()
+      .globeImageUrl('https://raw.githubusercontent.com/nvkelso/natural-earth-3d/master/images/earth-dark.jpg');
+    scene.add(globe);
 
-      input[type="file"] {
-        display: none;
-      }
-    </style>
-  </head>
+    const light = new THREE.AmbientLight(0xffffff);
+    scene.add(light);
 
-  <body>
-    <div id="container">
-      <div id="uploadBox">
-        <h3>Sube tu Imagen</h3>
-        <input type="file" id="fileInput" />
-        <label for="fileInput" id="uploadButton">Subir Imagen</label>
-      </div>
-    </div>
+    const controls = new OrbitControls(camera, renderer.domElement);
+    camera.position.z = 250;
 
-    <script type="module">
-      // Importar THREE.js y OrbitControls como módulos
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.module.js';
-      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.0/examples/js/controls/OrbitControls.js';
-      import { ThreeGlobe } from 'https://cdn.jsdelivr.net/npm/three-globe@2.23.0/dist/three-globe.module.js';
-
-      // Crear la escena
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer();
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+    });
 
-      // Crear el globo 3D
-      const globe = new ThreeGlobe()
-        .globeImageUrl('https://raw.githubusercontent.com/nvkelso/natural-earth-3d/master/images/earth-dark.jpg')
-        .bordersVisible(true)
-        .showGraticules(true);
-      scene.add(globe);
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.001;
+      controls.update();
+      renderer.render(scene, camera);
+    }
 
-      // Luz ambiental
-      const light = new THREE.AmbientLight(0x404040, 2);
-      scene.add(light);
+    animate();
 
-      // Control de órbita (para poder mover el globo)
-      const controls = new OrbitControls(camera, renderer.domElement);
-
-      camera.position.z = 300;
-
-      // Animar el globo
-      function animate() {
-        requestAnimationFrame(animate);
-        globe.rotate(0.1, 0.1); // Girar el globo
-        controls.update(); // Actualizar controles
-        renderer.render(scene, camera);
+    document.getElementById("fileInput").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const imageUrl = e.target.result;
+          alert("Imagen cargada (aún falta agregarla al mapa): " + file.name);
+        };
+        reader.readAsDataURL(file);
       }
-
-      animate();
-
-      // Funcionalidad para subir imágenes
-      document.getElementById('fileInput').addEventListener('change', function (event) {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            const imageUrl = e.target.result;
-
-            // Cargar la imagen en el mapa (por ahora solo se muestra la URL)
-            console.log('Imagen subida:', imageUrl);
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      // Ajustar el tamaño del mapa cuando se cambia el tamaño de la ventana
-      window.addEventListener('resize', () => {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-      });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
