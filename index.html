@@ -60,6 +60,7 @@
 
     scene.add(globe);
 
+    // Solución para OrbitControls: usar una nueva instancia correctamente
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableZoom = true;
 
@@ -101,4 +102,3 @@
   </script>
 </body>
 </html>
-
