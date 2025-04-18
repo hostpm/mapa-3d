@@ -37,10 +37,10 @@
     <p>Haz clic en el globo para colocarla</p>
   </div>
 
-  <!-- ✅ Librerías NO Módulos (100% funcionales en GitHub Pages) -->
-  <script src="https://unpkg.com/three@0.150.1/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.150.1/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://unpkg.com/three-globe@2.24.11/dist/three-globe.min.js"></script>
+  <!-- Librerías sin ESModules (funcionan en GitHub Pages) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three-globe@2.24.11/dist/three-globe.min.js"></script>
 
   <script>
     const scene = new THREE.Scene();
@@ -53,11 +53,12 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('globeViz').appendChild(renderer.domElement);
 
-    const GlobeInstance = new ThreeGlobe()
-      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png');
+    const globe = new ThreeGlobe();
 
-    scene.add(GlobeInstance);
+    globe.globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+    globe.backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png');
+
+    scene.add(globe);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableZoom = true;
@@ -69,7 +70,7 @@
     }
     animate();
 
-    // Coordenadas aleatorias y colocar imagen
+    // Subir imagen y colocarla al hacer clic
     document.getElementById('globeViz').addEventListener('click', () => {
       const input = document.getElementById('imageInput');
       if (!input.files.length) return alert('Selecciona una imagen primero.');
@@ -81,7 +82,7 @@
         const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
         const imageMesh = new THREE.Mesh(geometry, material);
 
-        // Posición aleatoria por ahora
+        // Coordenadas aleatorias (luego se puede mejorar)
         const lat = (Math.random() - 0.5) * 180;
         const lng = (Math.random() - 0.5) * 360;
         const radius = 100;
@@ -100,4 +101,5 @@
   </script>
 </body>
 </html>
+
 
