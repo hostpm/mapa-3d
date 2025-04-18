@@ -91,7 +91,9 @@
             side: THREE.DoubleSide
           })
         );
-        marker.position.copy(intersectPoint);
+        const normal = intersectPoint.clone().normalize();
+        marker.position.copy(normal.multiplyScalar(505)); // Un poco más grande que el radio (500)
+
         globe.add(marker);
         isImageReady = false;
       }
