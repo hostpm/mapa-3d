@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Globo Interactivo</title>
+  <meta charset="UTF-8" />
+  <title>Mapa Global IA</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden;
+      font-family: Arial, sans-serif;
     }
 
     #uploadForm {
       position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 100;
-      background: white;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255,255,255,0.8);
       padding: 10px;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
 
     canvas {
@@ -28,7 +28,7 @@
 </head>
 <body>
   <div id="uploadForm">
-    <strong>Sube una imagen:</strong><br>
+    <label for="imageInput">Subir imagen:</label>
     <input type="file" id="imageInput" accept="image/*" />
   </div>
 
@@ -37,18 +37,19 @@
 
   <script>
     let scene = new THREE.Scene();
-    let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    let renderer = new THREE.WebGLRenderer({ antialias: true });
+    let camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+    let renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     let controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableZoom = true;
+
     camera.position.set(0, 0, 5);
     controls.update();
 
     let sphereGeometry = new THREE.SphereGeometry(1.5, 64, 64);
-    let earthTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/earth_atmos_2048.jpg');
+    let earthTexture = new THREE.TextureLoader().load('https://raw.githubusercontent.com/creativetimofficial/public-assets/master/soft-ui-dashboard-pro/assets/img/earthmap.jpg');
     let sphereMaterial = new THREE.MeshStandardMaterial({ map: earthTexture });
     let earth = new THREE.Mesh(sphereGeometry, sphereMaterial);
     scene.add(earth);
@@ -57,17 +58,18 @@
     light.position.set(5, 3, 5);
     scene.add(light);
 
+    // Imagen seleccionada
     let uploadedImage = null;
     document.getElementById('imageInput').addEventListener('change', function (e) {
       let file = e.target.files[0];
-      if (!file) return;
       let reader = new FileReader();
       reader.onload = function (event) {
         uploadedImage = new THREE.TextureLoader().load(event.target.result);
       };
-      reader.readAsDataURL(file);
+      if (file) reader.readAsDataURL(file);
     });
 
+    // Click en el globo para colocar imagen
     window.addEventListener('click', function (e) {
       if (!uploadedImage) return;
 
@@ -83,7 +85,7 @@
       if (intersects.length > 0) {
         let point = intersects[0].point;
 
-        let spriteMaterial = new THREE.SpriteMaterial({ map: uploadedImage });
+        let spriteMaterial = new THREE.SpriteMaterial({ map: uploadedImage, depthTest: false });
         let sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(0.3, 0.3, 1);
         sprite.position.copy(point);
