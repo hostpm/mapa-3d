@@ -37,12 +37,12 @@
     <p>Haz clic en el globo para colocarla</p>
   </div>
 
-  <!-- Librerías sin ESModules (funcionan en GitHub Pages) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three-globe@2.24.11/dist/three-globe.min.js"></script>
+  <!-- Librerías de Three.js y ThreeGlobe -->
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.149.0/examples/js/controls/OrbitControls.js';
+    import { ThreeGlobe } from 'https://cdn.jsdelivr.net/npm/three-globe@2.24.11/dist/three-globe.module.js';
 
-  <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera();
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -54,14 +54,11 @@
     document.getElementById('globeViz').appendChild(renderer.domElement);
 
     const globe = new ThreeGlobe();
-
-    // Fondo del globo
     globe.globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-
     scene.add(globe);
 
-    // Solución para OrbitControls: usar una nueva instancia correctamente
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    // OrbitControls con módulos ES6
+    const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableZoom = true;
 
     function animate() {
