@@ -15,7 +15,7 @@
       position: absolute;
       top: 20px;
       left: 20px;
-      z-index: 999;
+      z-index: 10;
       background-color: white;
       padding: 15px;
       border-radius: 10px;
@@ -33,44 +33,43 @@
   </style>
 </head>
 <body>
-  <!-- Caja para subir imagen -->
   <div id="uploadContainer">
     <label><strong>Sube una imagen generada con IA:</strong></label>
     <input type="file" id="imageInput" accept="image/*" />
     <p>Haz clic en el globo para colocarla</p>
   </div>
 
-  <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.min.js"></script>
 
-  <!-- Código principal -->
   <script>
-    // Escena, cámara y renderizador
+    // Escena y cámara
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 4);
+
+    // Renderizador
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Control orbital
+    // Controles
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.set(0, 0, 4);
-    controls.update();
+    controls.enableDamping = true;
 
-    // Luz
+    // Iluminación
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(5, 3, 5);
     scene.add(light);
 
-    // Crear esfera del globo
+    // Globo terráqueo
+    const texture = new THREE.TextureLoader().load('https://raw.githubusercontent.com/nvkelso/natural-earth-3d/master/images/earth-dark.jpg');
     const geometry = new THREE.SphereGeometry(1.5, 64, 64);
-    const texture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/earth_atmos_2048.jpg');
     const material = new THREE.MeshStandardMaterial({ map: texture });
     const globe = new THREE.Mesh(geometry, material);
     scene.add(globe);
 
-    // Subida de imagen
+    // Imagen cargada por el usuario
     let uploadedTexture = null;
     document.getElementById('imageInput').addEventListener('change', function (e) {
       const file = e.target.files[0];
@@ -83,7 +82,7 @@
       reader.readAsDataURL(file);
     });
 
-    // Colocar imagen en globo
+    // Clic sobre el globo
     window.addEventListener('click', function (e) {
       if (!uploadedTexture) return;
 
@@ -104,14 +103,16 @@
         sprite.position.copy(point);
         scene.add(sprite);
 
+        // Limpiar
         uploadedTexture = null;
         document.getElementById('imageInput').value = '';
       }
     });
 
-    // Animar
+    // Animación
     function animate() {
       requestAnimationFrame(animate);
+      controls.update();
       renderer.render(scene, camera);
     }
     animate();
