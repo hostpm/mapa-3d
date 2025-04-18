@@ -2,23 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mapa Global IA</title>
+  <title>Mapa 3D con imágenes</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden;
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
     }
 
-    #uploadForm {
+    #uploadContainer {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-      background: rgba(255,255,255,0.8);
-      padding: 10px;
-      border-radius: 8px;
+      top: 20px;
+      left: 20px;
+      z-index: 999;
+      background-color: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    #imageInput {
+      display: block;
+      margin-top: 10px;
     }
 
     canvas {
@@ -27,80 +33,87 @@
   </style>
 </head>
 <body>
-  <div id="uploadForm">
-    <label for="imageInput">Subir imagen:</label>
+  <!-- Caja para subir imagen -->
+  <div id="uploadContainer">
+    <label><strong>Sube una imagen generada con IA:</strong></label>
     <input type="file" id="imageInput" accept="image/*" />
+    <p>Haz clic en el globo para colocarla</p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Librerías -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.min.js"></script>
 
+  <!-- Código principal -->
   <script>
-    let scene = new THREE.Scene();
-    let camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-    let renderer = new THREE.WebGLRenderer({antialias: true});
+    // Escena, cámara y renderizador
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    let controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableZoom = true;
-
-    camera.position.set(0, 0, 5);
+    // Control orbital
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.set(0, 0, 4);
     controls.update();
 
-    let sphereGeometry = new THREE.SphereGeometry(1.5, 64, 64);
-    let earthTexture = new THREE.TextureLoader().load('https://raw.githubusercontent.com/creativetimofficial/public-assets/master/soft-ui-dashboard-pro/assets/img/earthmap.jpg');
-    let sphereMaterial = new THREE.MeshStandardMaterial({ map: earthTexture });
-    let earth = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    scene.add(earth);
-
-    let light = new THREE.DirectionalLight(0xffffff, 1);
+    // Luz
+    const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(5, 3, 5);
     scene.add(light);
 
-    // Imagen seleccionada
-    let uploadedImage = null;
+    // Crear esfera del globo
+    const geometry = new THREE.SphereGeometry(1.5, 64, 64);
+    const texture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/earth_atmos_2048.jpg');
+    const material = new THREE.MeshStandardMaterial({ map: texture });
+    const globe = new THREE.Mesh(geometry, material);
+    scene.add(globe);
+
+    // Subida de imagen
+    let uploadedTexture = null;
     document.getElementById('imageInput').addEventListener('change', function (e) {
-      let file = e.target.files[0];
-      let reader = new FileReader();
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
       reader.onload = function (event) {
-        uploadedImage = new THREE.TextureLoader().load(event.target.result);
+        uploadedTexture = new THREE.TextureLoader().load(event.target.result);
       };
-      if (file) reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
     });
 
-    // Click en el globo para colocar imagen
+    // Colocar imagen en globo
     window.addEventListener('click', function (e) {
-      if (!uploadedImage) return;
+      if (!uploadedTexture) return;
 
-      let mouse = new THREE.Vector2(
+      const mouse = new THREE.Vector2(
         (e.clientX / window.innerWidth) * 2 - 1,
         -(e.clientY / window.innerHeight) * 2 + 1
       );
 
-      let raycaster = new THREE.Raycaster();
+      const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(globe);
 
-      let intersects = raycaster.intersectObject(earth);
       if (intersects.length > 0) {
-        let point = intersects[0].point;
-
-        let spriteMaterial = new THREE.SpriteMaterial({ map: uploadedImage, depthTest: false });
-        let sprite = new THREE.Sprite(spriteMaterial);
+        const point = intersects[0].point;
+        const spriteMaterial = new THREE.SpriteMaterial({ map: uploadedTexture });
+        const sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(0.3, 0.3, 1);
         sprite.position.copy(point);
         scene.add(sprite);
 
-        uploadedImage = null;
+        uploadedTexture = null;
         document.getElementById('imageInput').value = '';
       }
     });
 
+    // Animar
     function animate() {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
     }
-
     animate();
   </script>
 </body>
