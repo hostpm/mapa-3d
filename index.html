@@ -1,154 +1,105 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa 3D Interactivo</title>
+  <title>Globo Interactivo</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
     }
 
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Estilo para el formulario */
-    #imageForm {
+    #uploadForm {
       position: absolute;
       top: 20px;
       left: 20px;
-      z-index: 10;
-      background-color: rgba(255, 255, 255, 0.7);
+      z-index: 100;
+      background: white;
       padding: 10px;
-      border-radius: 5px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
 
-    #imageInput {
-      margin-right: 10px;
+    canvas {
+      display: block;
     }
   </style>
 </head>
 <body>
-
-<!-- Formulario para subir imágenes -->
-<div id="imageForm">
-  <form id="imageForm">
+  <div id="uploadForm">
+    <strong>Sube una imagen:</strong><br>
     <input type="file" id="imageInput" accept="image/*" />
-    <button type="submit">Subir Imagen</button>
-  </form>
-</div>
+  </div>
 
-<!-- El Canvas para renderizar el globo 3D -->
-<canvas id="globeCanvas"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
 
-<!-- Cargar la librería de Three.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<script>
-  // Escena básica de Three.js
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globeCanvas') });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  // Crear un globo 3D
-  const geometry = new THREE.SphereGeometry(500, 60, 60);
-  const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
-  const globe = new THREE.Mesh(geometry, material);
-  scene.add(globe);
-
-  // Posición de la cámara
-  camera.position.z = 1000;
-
-  // Raycaster y mouse para detectar clics
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-  const globeElement = document.querySelector('canvas');
-
-  // Variables para manejar la imagen seleccionada
-  let isImageReady = false;
-  let imageUrl = "";
-
-  // Captura del formulario y carga de imagen
-  const imageForm = document.getElementById('imageForm');
-  const imageInput = document.getElementById('imageInput');
-
-  imageForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const file = imageInput.files[0];
-
-    if (!file) {
-      alert("Por favor, selecciona una imagen.");
-      return;
-    }
-
-    // Convertir la imagen seleccionada a una URL base64
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      imageUrl = event.target.result;
-      isImageReady = true;  // Marcar que la imagen está lista para usarse
-    };
-    reader.readAsDataURL(file);
-  });
-
-  // Animar el globo 3D
-  function animate() {
-    requestAnimationFrame(animate);
-    globe.rotation.y += 0.01;
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  // Detectar clic en el globo 3D para colocar la imagen
-  globeElement.addEventListener('click', (event) => {
-    if (!isImageReady) {
-      alert("Primero selecciona una imagen.");
-      return;
-    }
-
-    // Obtener las coordenadas del clic
-    const rect = globeElement.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    // Raycasting para obtener la posición en el globo
-    raycaster.updateMatrixWorld();
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(globe);
-
-    if (intersects.length > 0) {
-      const intersectPoint = intersects[0].point;
-
-      // Crear el marcador de imagen
-      const marker = new THREE.Mesh(
-        new THREE.PlaneGeometry(10, 10), // Ajusta el tamaño de la imagen
-        new THREE.MeshBasicMaterial({ 
-          map: new THREE.TextureLoader().load(imageUrl), 
-          transparent: true, 
-          opacity: 0.8 
-        })
-      );
-      marker.position.copy(intersectPoint); // Colocar la imagen en la posición del clic
-      scene.add(marker);
-      isImageReady = false;  // Desactivar la carga de imagen después de colocarla
-    }
-  });
-
-  // Función para actualizar el tamaño del canvas si se cambia la ventana
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+  <script>
+    let scene = new THREE.Scene();
+    let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    let renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-</script>
+    document.body.appendChild(renderer.domElement);
 
+    let controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = true;
+    camera.position.set(0, 0, 5);
+    controls.update();
+
+    let sphereGeometry = new THREE.SphereGeometry(1.5, 64, 64);
+    let earthTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/earth_atmos_2048.jpg');
+    let sphereMaterial = new THREE.MeshStandardMaterial({ map: earthTexture });
+    let earth = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    scene.add(earth);
+
+    let light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 3, 5);
+    scene.add(light);
+
+    let uploadedImage = null;
+    document.getElementById('imageInput').addEventListener('change', function (e) {
+      let file = e.target.files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = function (event) {
+        uploadedImage = new THREE.TextureLoader().load(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    window.addEventListener('click', function (e) {
+      if (!uploadedImage) return;
+
+      let mouse = new THREE.Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+      );
+
+      let raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      let intersects = raycaster.intersectObject(earth);
+      if (intersects.length > 0) {
+        let point = intersects[0].point;
+
+        let spriteMaterial = new THREE.SpriteMaterial({ map: uploadedImage });
+        let sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(0.3, 0.3, 1);
+        sprite.position.copy(point);
+        scene.add(sprite);
+
+        uploadedImage = null;
+        document.getElementById('imageInput').value = '';
+      }
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
 </body>
 </html>
