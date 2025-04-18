@@ -44,7 +44,7 @@
 
   // Cargar textura del planeta
   const loader = new THREE.TextureLoader();
-  const earthTexture = loader.load('https://planetpixelemporium.com/images/earthmap8k.jpg');
+const earthTexture = loader.load('https://planetpixelemporium.com/images/earthmap8k.jpg');
   const globe = new THREE.Mesh(
     new THREE.SphereGeometry(500, 64, 64),
     new THREE.MeshBasicMaterial({ map: earthTexture })
