@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mapa 3D Interactivo</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
 
     #imageForm {
       position: absolute;
@@ -17,7 +27,10 @@
       padding: 10px;
       border-radius: 5px;
     }
-    #imageInput { margin-right: 10px; }
+
+    #imageInput {
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -30,86 +43,48 @@
   </form>
 </div>
 
-<!-- Canvas -->
 <canvas id="globeCanvas"></canvas>
 
-<!-- Librerías -->
+<!-- Librería Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globeCanvas') });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // Grupo para el globo y los marcadores
+  const globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  // Crear el globo
+  const geometry = new THREE.SphereGeometry(500, 60, 60);
+  const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: false });
+  const globe = new THREE.Mesh(geometry, material);
+  globeGroup.add(globe);
+
+  // Posicionar la cámara
   camera.position.z = 1000;
 
-  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globeCanvas'), antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const globeElement = document.querySelector('canvas');
 
-  // 🌍 Cargar textura del planeta
-  const textureLoader = new THREE.TextureLoader();
-  textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg', function (earthTexture) {
-    const geometry = new THREE.SphereGeometry(500, 64, 64);
-    const material = new THREE.MeshBasicMaterial({ map: earthTexture });
-    const globe = new THREE.Mesh(geometry, material);
-    scene.add(globe);
-
-    // Animación
-    function animate() {
-      requestAnimationFrame(animate);
-      globe.rotation.y += 0.0015;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // 🖱️ Clicks en el globo
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    const globeCanvas = document.querySelector('canvas');
-
-    globeCanvas.addEventListener('click', (event) => {
-      if (!isImageReady) {
-        alert("Primero selecciona una imagen.");
-        return;
-      }
-
-      const rect = globeCanvas.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(globe);
-
-      if (intersects.length > 0) {
-        const intersectPoint = intersects[0].point;
-
-        const marker = new THREE.Mesh(
-          new THREE.PlaneGeometry(40, 40),
-          new THREE.MeshBasicMaterial({
-            map: new THREE.TextureLoader().load(imageUrl),
-            transparent: true,
-            opacity: 0.9,
-            side: THREE.DoubleSide
-          })
-        );
-        const normal = intersectPoint.clone().normalize();
-        marker.position.copy(normal.multiplyScalar(505)); // Un poco más grande que el radio (500)
-
-        globe.add(marker);
-        isImageReady = false;
-      }
-    });
-  });
-
-  // 📷 Imagen del formulario
   let isImageReady = false;
   let imageUrl = "";
+
   const imageForm = document.getElementById('imageForm');
   const imageInput = document.getElementById('imageInput');
 
   imageForm.addEventListener('submit', (e) => {
     e.preventDefault();
+
     const file = imageInput.files[0];
-    if (!file) return alert("Selecciona una imagen.");
+    if (!file) {
+      alert("Por favor, selecciona una imagen.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = function (event) {
@@ -119,12 +94,57 @@
     reader.readAsDataURL(file);
   });
 
-  // 📏 Responsive
+  // Animación del globo
+  function animate() {
+    requestAnimationFrame(animate);
+    globeGroup.rotation.y += 0.01;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Click para colocar la imagen
+  globeElement.addEventListener('click', (event) => {
+    if (!isImageReady) {
+      alert("Primero selecciona una imagen.");
+      return;
+    }
+
+    const rect = globeElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(globe, true);
+
+    if (intersects.length > 0) {
+      const intersectPoint = intersects[0].point;
+
+      const marker = new THREE.Mesh(
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.MeshBasicMaterial({
+          map: new THREE.TextureLoader().load(imageUrl),
+          transparent: true,
+          opacity: 0.9,
+          side: THREE.DoubleSide
+        })
+      );
+
+      marker.position.copy(intersectPoint);
+
+      // Que la imagen mire hacia afuera
+      marker.lookAt(intersectPoint.clone().multiplyScalar(2));
+
+      globeGroup.add(marker);
+      isImageReady = false;
+    }
+  });
+
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 </script>
+
 </body>
 </html>
